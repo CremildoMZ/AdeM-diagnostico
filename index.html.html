@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdeM, IP — Diagnóstico de Sistemas Informáticos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy:#1B3A6B;--navy-dark:#0f2347;--teal:#007B8A;--teal-light:#E1F5EE;
+  --teal-mid:#5DCAA5;--amber:#E8A020;--amber-light:#FFF8ED;--red:#C0392B;
+  --red-light:#FDECEA;--green:#1D9E75;--green-light:#E8F7F2;
+  --gray-50:#F8F9FB;--gray-100:#EEF1F6;--gray-200:#D8DEE9;--gray-400:#8A94A6;
+  --gray-600:#4A5568;--gray-800:#1A202C;--white:#FFFFFF;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(27,58,107,0.10);--shadow-lg:0 12px 48px rgba(27,58,107,0.16);
+  --font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-body);background:var(--gray-50);color:var(--gray-800);min-height:100vh;}
+
+/* HEADER */
+.app-header{background:var(--navy);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,0.2);}
+.header-brand{display:flex;align-items:center;gap:14px;}
+.header-logo-svg{width:44px;height:44px;border-radius:10px;overflow:hidden;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header-logo-svg svg{width:36px;height:36px;}
+.header-title{font-family:var(--font-display);color:white;font-size:19px;}
+.header-subtitle{color:var(--teal-mid);font-size:11px;font-weight:400;letter-spacing:0.6px;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:20px;}
+.progress-bar-wrap{background:rgba(255,255,255,0.1);height:4px;border-radius:2px;width:180px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--teal-mid);border-radius:2px;transition:width 0.5s cubic-bezier(.4,0,.2,1);}
+.nav-tabs{display:flex;gap:4px;}
+.nav-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);background:transparent;transition:all 0.2s;}
+.nav-tab.active{background:var(--teal);border-color:var(--teal);color:white;}
+.nav-tab:hover:not(.active){background:rgba(255,255,255,0.1);color:white;}
+
+/* RESUME BANNER */
+.resume-banner{background:var(--amber-light);border:1.5px solid var(--amber);border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.resume-banner p{font-size:13px;color:#92400E;}
+.resume-banner strong{color:#78350F;}
+.resume-actions{display:flex;gap:8px;}
+
+/* MAIN */
+.app-main{max-width:860px;margin:0 auto;padding:2rem 1.5rem 6rem;}
+.view{display:none;}.view.active{display:block;}
+
+/* STEPS NAV */
+.steps-nav{display:flex;gap:6px;margin-bottom:2rem;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.steps-nav::-webkit-scrollbar{display:none;}
+.step-dot{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;border:1.5px solid var(--gray-200);background:white;color:var(--gray-400);white-space:nowrap;}
+.step-dot.active{background:var(--navy);border-color:var(--navy);color:white;}
+.step-dot.done{background:var(--teal-light);border-color:var(--teal);color:var(--teal);}
+.step-dot .dot-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;background:currentColor;color:white;}
+.step-dot.active .dot-num{background:var(--teal-mid);color:var(--navy);}
+
+/* SECTION CARD */
+.section-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:2rem;margin-bottom:1.5rem;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.section-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:2px solid var(--gray-100);}
+.section-icon{width:44px;height:44px;border-radius:10px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.section-title{font-family:var(--font-display);font-size:22px;color:var(--navy);line-height:1.2;}
+.section-desc{font-size:13px;color:var(--gray-400);margin-top:4px;line-height:1.5;}
+
+/* FORM */
+.form-group{margin-bottom:1.25rem;}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:6px;letter-spacing:0.3px;}
+.form-label .req{color:var(--red);margin-left:2px;}
+.form-hint{font-size:12px;color:var(--gray-400);margin-bottom:6px;font-style:italic;}
+.form-input,.form-select,.form-textarea{width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-body);font-size:14px;color:var(--gray-800);background:white;transition:border-color 0.2s,box-shadow 0.2s;outline:none;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,123,138,0.12);}
+.form-textarea{min-height:80px;resize:vertical;}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A94A6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:600px){.form-grid-2{grid-template-columns:1fr;}}
+
+/* STARS */
+.star-group{margin-bottom:1rem;}
+.star-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.star-label{font-size:13px;font-weight:600;color:var(--gray-600);}
+.star-value{font-size:13px;font-weight:700;color:var(--navy);min-width:24px;text-align:right;}
+.stars{display:flex;flex-direction:row-reverse;gap:4px;}
+.stars input[type=radio]{display:none;}
+.stars label{font-size:28px;cursor:pointer;color:var(--gray-200);transition:color 0.15s;line-height:1;}
+.stars input:checked~label{color:var(--amber)!important;}
+.stars label:hover,.stars label:hover~label{color:var(--amber)!important;}
+.star-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--gray-400);margin-top:2px;}
+
+/* SCORE PREVIEW */
+.score-preview{background:linear-gradient(135deg,var(--navy) 0%,var(--teal) 100%);border-radius:var(--radius);padding:1.25rem 1.5rem;color:white;display:flex;align-items:center;gap:1.5rem;margin-top:1rem;}
+.score-circle{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.15);border:3px solid rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.score-num{font-family:var(--font-display);font-size:28px;line-height:1;}
+.score-max{font-size:11px;opacity:0.7;}
+.score-bars{flex:1;}
+.score-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.score-bar-name{font-size:11px;width:130px;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.score-bar-bg{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.2);overflow:hidden;}
+.score-bar-fill{height:100%;border-radius:3px;background:var(--teal-mid);transition:width 0.5s ease;}
+.score-bar-val{font-size:11px;width:16px;text-align:right;opacity:0.9;}
+
+/* CHECKBOXES */
+.checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+@media(max-width:500px){.checkbox-grid{grid-template-columns:1fr;}}
+.checkbox-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;font-size:13px;}
+.checkbox-item:hover{border-color:var(--teal);background:var(--teal-light);}
+.checkbox-item input[type=checkbox]{accent-color:var(--teal);width:15px;height:15px;}
+.checkbox-item.checked{border-color:var(--teal);background:var(--teal-light);color:var(--teal);font-weight:500;}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:12px;justify-content:flex-end;padding-top:1.5rem;flex-wrap:wrap;}
+.btn{padding:10px 20px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;display:flex;align-items:center;gap:7px;}
+.btn-primary{background:var(--navy);color:white;}
+.btn-primary:hover{background:var(--navy-dark);transform:translateY(-1px);box-shadow:var(--shadow);}
+.btn-secondary{background:var(--gray-100);color:var(--gray-600);}
+.btn-secondary:hover{background:var(--gray-200);}
+.btn-teal{background:var(--teal);color:white;}
+.btn-teal:hover{background:#006070;transform:translateY(-1px);}
+.btn-outline{background:white;color:var(--gray-600);border:1.5px solid var(--gray-200);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-green{background:var(--green);color:white;}
+.btn-green:hover{background:#0e7a59;transform:translateY(-1px);}
+.btn-amber{background:var(--amber);color:white;}
+.btn-amber:hover{background:#c8880a;}
+.btn-red{background:var(--red);color:white;}
+.btn-red:hover{background:#a03020;}
+
+/* REPORT */
+.report-wrap{background:white;border-radius:var(--radius);box-shadow:var(--shadow-lg);overflow:hidden;}
+.report-header{background:var(--navy);padding:2rem 2.5rem;color:white;}
+.report-title{font-family:var(--font-display);font-size:24px;margin-bottom:6px;}
+.report-meta{font-size:12px;opacity:0.7;display:flex;gap:16px;flex-wrap:wrap;}
+.report-body{padding:2rem 2.5rem;}
+.report-score-band{display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap;}
+.score-badge{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;}
+.score-badge.high{background:var(--green-light);color:var(--green);}
+.score-badge.mid{background:var(--amber-light);color:var(--amber);}
+.score-badge.low{background:var(--red-light);color:var(--red);}
+.ai-text{font-size:14px;line-height:1.75;color:#2D3748;}
+.ai-text h2{font-family:var(--font-display);font-size:18px;color:var(--navy);margin:1.5rem 0 0.5rem;padding-bottom:6px;border-bottom:2px solid var(--gray-100);}
+.ai-text h3{font-size:13px;font-weight:700;color:var(--teal);margin:1rem 0 0.3rem;text-transform:uppercase;letter-spacing:0.5px;}
+.ai-text ul{padding-left:1.2rem;margin:0.5rem 0;}
+.ai-text li{margin-bottom:4px;}
+.ai-text strong{font-weight:600;color:var(--navy);}
+.loading-pulse{display:flex;align-items:center;gap:12px;padding:2rem;color:var(--gray-400);font-size:14px;}
+.pulse-dots{display:flex;gap:6px;}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:pulse 1.4s ease-in-out infinite;}
+.pulse-dot:nth-child(2){animation-delay:0.2s;}
+.pulse-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes pulse{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+/* EXPORT BAR */
+.export-bar{background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:12px;}
+.export-bar-label{font-size:13px;font-weight:600;color:var(--gray-600);}
+.export-btns{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* CONSOLIDATION */
+.consol-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px;}
+.consol-title{font-family:var(--font-display);font-size:26px;color:var(--navy);}
+.consol-empty{text-align:center;padding:4rem 2rem;color:var(--gray-400);}
+.consol-empty-icon{font-size:48px;margin-bottom:1rem;}
+.systems-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;}
+.system-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem;cursor:pointer;transition:all 0.2s;border:2px solid transparent;}
+.system-card:hover{border-color:var(--teal);transform:translateY(-2px);}
+.sys-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.75rem;}
+.sys-card-title{font-weight:600;font-size:15px;color:var(--navy);}
+.sys-card-sub{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.sys-score-pill{padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700;}
+.mini-bars{margin-top:0.75rem;}
+.mini-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.mini-bar-name{font-size:11px;color:var(--gray-400);width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-bar-bg{flex:1;height:5px;border-radius:3px;background:var(--gray-100);}
+.mini-bar-fill{height:100%;border-radius:3px;background:var(--teal);}
+.sys-card-date{font-size:11px;color:var(--gray-400);margin-top:0.75rem;border-top:1px solid var(--gray-100);padding-top:0.5rem;}
+.sys-card-actions{display:flex;gap:6px;margin-top:0.75rem;}
+.btn-xs{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+.chart-wrap{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem;margin-bottom:1.5rem;}
+.chart-title{font-family:var(--font-display);font-size:18px;color:var(--navy);margin-bottom:1rem;}
+.summary-table{width:100%;border-collapse:collapse;}
+.summary-table th{background:var(--navy);color:white;padding:10px 14px;text-align:left;font-size:12px;font-weight:600;}
+.summary-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--gray-100);}
+.summary-table tr:hover td{background:var(--gray-50);}
+.badge-small{padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700;}
+
+@media print{
+  .app-header,.steps-nav,.btn-row,.export-bar,.section-card:not(.report-printable),.nav-tabs,#resumeBanner{display:none!important;}
+  .report-wrap{box-shadow:none;}
+  body{background:white;}
+  .report-printable{display:block!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-brand">
+    <div class="header-logo-svg">
+      <!-- AdeM, IP Logo Placeholder — substitua pelo logótipo oficial -->
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="#1B3A6B"/>
+        <path d="M18 6C18 6 8 14 8 21a10 10 0 0020 0C28 14 18 6 18 6z" fill="#5DCAA5" opacity="0.9"/>
+        <path d="M18 12C18 12 12 17 12 21a6 6 0 0012 0C24 17 18 12 18 12z" fill="white" opacity="0.8"/>
+        <text x="18" y="25" text-anchor="middle" font-family="serif" font-size="7" fill="#1B3A6B" font-weight="bold">IP</text>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">AdeM, IP</div>
+      <div class="header-subtitle">Diagnóstico de Sistemas Informáticos</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('form')">📋 Formulário</button>
+      <button class="nav-tab" onclick="switchView('consolidation')" id="consolTab">📊 Consolidação</button>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px">Progresso</div>
+      <div id="progress-label" style="font-size:11px;color:var(--teal-mid);font-weight:600">Passo 1 de 8</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:12.5%"></div>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+
+<!-- RESUME BANNER -->
+<div id="resumeBanner" style="display:none" class="resume-banner">
+  <p>💾 Existe um preenchimento guardado: <strong id="resumeInfo"></strong>. Deseja retomar?</p>
+  <div class="resume-actions">
+    <button class="btn btn-amber" onclick="resumeSaved()">↩ Retomar</button>
+    <button class="btn btn-secondary" onclick="discardSaved()">🗑 Descartar</button>
+  </div>
+</div>
+
+<!-- ══ FORM VIEW ══ -->
+<div class="view active" id="view-form">
+  <nav class="steps-nav" id="steps-nav">
+    <div class="step-dot active" onclick="goTo(0)" id="step-0"><span class="dot-num">A</span> Identificação</div>
+    <div class="step-dot" onclick="goTo(1)" id="step-1"><span class="dot-num">B</span> Sistema</div>
+    <div class="step-dot" onclick="goTo(2)" id="step-2"><span class="dot-num">C</span> Cobertura</div>
+    <div class="step-dot" onclick="goTo(3)" id="step-3"><span class="dot-num">D</span> Maturidade</div>
+    <div class="step-dot" onclick="goTo(4)" id="step-4"><span class="dot-num">E</span> Problemas</div>
+    <div class="step-dot" onclick="goTo(5)" id="step-5"><span class="dot-num">F</span> Infraestrutura</div>
+    <div class="step-dot" onclick="goTo(6)" id="step-6"><span class="dot-num">G</span> Necessidades</div>
+    <div class="step-dot" onclick="goTo(7)" id="step-7"><span class="dot-num">★</span> Relatório IA</div>
+  </nav>
+
+  <!-- SEC A -->
+  <div class="section-card" id="sec-0">
+    <div class="section-header"><div class="section-icon">🏢</div><div>
+      <div class="section-title">Identificação da Unidade</div>
+      <div class="section-desc">Informação sobre a unidade orgânica e o responsável</div>
+    </div></div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Unidade Orgânica <span class="req">*</span></label><input class="form-input" id="a_unidade" oninput="autoSave()" placeholder="Ex: Direcção Regional Centro…"></div>
+      <div class="form-group"><label class="form-label">Tipo de Unidade <span class="req">*</span></label>
+        <select class="form-select" id="a_tipo" onchange="autoSave()"><option value="">Seleccione…</option><option>Sede</option><option>Direcção Regional</option><option>Delegação</option><option>Entidade Gestora Delegada (EGD)</option></select></div>
+      <div class="form-group"><label class="form-label">Província <span class="req">*</span></label><select class="form-select" id="a_provincia" onchange="updateDistritos();autoSave()"><option value="">Seleccione…</option></select></div>
+      <div class="form-group"><label class="form-label">Distrito <span class="req">*</span></label><select class="form-select" id="a_distrito" onchange="autoSave()"><option value="">Seleccione primeiro a Província…</option></select></div>
+      <div class="form-group"><label class="form-label">Nome do Respondente <span class="req">*</span></label><input class="form-input" id="a_nome" oninput="autoSave()" placeholder="Nome completo"></div>
+      <div class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="a_cargo" oninput="autoSave()" placeholder="Ex: Director de TI…"></div>
+      <div class="form-group"><label class="form-label">Email / Contacto</label><input class="form-input" id="a_contacto" oninput="autoSave()" placeholder="email@adem.gov.mz"></div>
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="a_data" onchange="autoSave()"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="nextStep(0)">Continuar →</button></div>
+  </div>
+
+  <!-- SEC B -->
+  <div class="section-card" id="sec-1" style="display:none">
+    <div class="section-header"><div class="section-icon">💻</div><div>
+      <div class="section-title">Identificação do Sistema</div>
+      <div class="section-desc">Informação básica sobre o sistema em análise</div>
+    </div></div>
+    <div class="form-grid-2">
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nome do Sistema <span class="req">*</span></label><input class="form-input" id="b_nome" oninput="autoSave()" placeholder="Ex: SIC, PRIMAVERA, ArcGIS, SIGFE…"></div>
+      <div class="form-group"><label class="form-label">Versão</label><input class="form-input" id="b_versao" oninput="autoSave()" placeholder="Ex: v3.2 / 2019"></div>
+      <div class="form-group"><label class="form-label">Domínio Funcional <span class="req">*</span></label>
+        <select class="form-select" id="b_dominio" onchange="autoSave()"><option value="">Seleccione…</option><option>Comercial (clientes, facturação, cobrança)</option><option>Financeiro / Contabilidade</option><option>Operacional (redes, SCADA, activos)</option><option>Recursos Humanos / Pessoal</option><option>GIS / Geoespacial / Cartografia</option><option>Gestão Documental / Arquivo</option><option>Suporte à Decisão / BI</option><option>Comunicações / Intranet</option><option>Outro</option></select></div>
+      <div class="form-group"><label class="form-label">Origem <span class="req">*</span></label>
+        <select class="form-select" id="b_origem" onchange="autoSave()"><option value="">Seleccione…</option><option>Empresa privada nacional</option><option>Empresa privada internacional</option><option>Desenvolvimento interno</option><option>Projecto de doador / cooperação</option><option>Software livre / open-source</option><option>Desconhecida</option></select></div>
+      <div class="form-group"><label class="form-label">Fornecedor</label><input class="form-input" id="b_fornecedor" oninput="autoSave()" placeholder="Ex: PRIMAVERA BSS…"></div>
+      <div class="form-group"><label class="form-label">Ano de Implementação</label><input class="form-input" type="number" id="b_ano" oninput="autoSave()" placeholder="Ex: 2018" min="1990" max="2025"></div>
+      <div class="form-group"><label class="form-label">Licenciamento</label>
+        <select class="form-select" id="b_licenca" onchange="autoSave()"><option value="">Seleccione…</option><option>Licença paga (perpetual)</option><option>Subscrição anual / SaaS</option><option>Gratuito / open-source</option><option>Desenvolvimento interno</option><option>Desconhecido</option></select></div>
+      <div class="form-group"><label class="form-label">Estado Actual <span class="req">*</span></label>
+        <select class="form-select" id="b_estado" onchange="autoSave()"><option value="">Seleccione…</option><option>Activo — uso pleno</option><option>Activo — uso parcial / limitado</option><option>Activo mas obsoleto</option><option>Inactivo / em desuso</option><option>Em fase de implementação</option></select></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-secondary" onclick="prevStep(1)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(1)">Continuar →</button></div>
+  </div>
+
+  <!-- SEC C -->
+  <div class="section-card" id="sec-2" style="display:none">
+    <div class="section-header"><div class="section-icon">🌍</div><div>
+      <div class="section-title">Cobertura e Utilização</div>
+      <div class="section-desc">Como e onde o sistema é utilizado actualmente</div>
+    </div></div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Cobertura Geográfica</label>
+        <select class="form-select" id="c_cobertura" onchange="autoSave()"><option value="">Seleccione…</option><option>Apenas esta unidade</option><option>Algumas delegações / regionais</option><option>Todas as delegações / regionais</option><option>Sede apenas</option><option>Toda a instituição</option><option>Sistemas principais e secundários</option></select></div>
+      <div class="form-group"><label class="form-label">Frequência de Uso</label>
+        <select class="form-select" id="c_frequencia" onchange="autoSave()"><option value="">Seleccione…</option><option>Diária</option><option>Semanal</option><option>Mensal</option><option>Pontual / Irregular</option><option>Actualmente em desuso</option></select></div>
+      <div class="form-group"><label class="form-label">Utilizadores — Esta Unidade</label><input class="form-input" type="number" id="c_utl_local" oninput="autoSave()" placeholder="Ex: 8" min="0"></div>
+      <div class="form-group"><label class="form-label">Utilizadores — Total Instituição</label><input class="form-input" type="number" id="c_utl_total" oninput="autoSave()" placeholder="Ex: 45" min="0"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Processos Suportados <span class="req">*</span></label><textarea class="form-textarea" id="c_processos" oninput="autoSave()" placeholder="Ex: Emissão de facturas, controlo de cobranças, relatórios de receita…"></textarea></div>
+      <div class="form-group"><label class="form-label">Integração com Outros Sistemas</label>
+        <select class="form-select" id="c_integracao" onchange="autoSave()"><option value="">Seleccione…</option><option>Sim — integração automática</option><option>Sim — integração manual / ficheiro</option><option>Não está integrado</option><option>Desconhecido</option></select></div>
+      <div class="form-group"><label class="form-label">Sistemas Integrados</label><input class="form-input" id="c_integ_sistemas" oninput="autoSave()" placeholder="Ex: SISTAFE, telemedição…"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-secondary" onclick="prevStep(2)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(2)">Continuar →</button></div>
+  </div>
+
+  <!-- SEC D -->
+  <div class="section-card" id="sec-3" style="display:none">
+    <div class="section-header"><div class="section-icon">⭐</div><div>
+      <div class="section-title">Avaliação de Maturidade</div>
+      <div class="section-desc">Classifique cada dimensão de 1 (Muito Baixo) a 5 (Muito Alto)</div>
+    </div></div>
+    <div id="stars-container"></div>
+    <div id="score-preview" style="display:none" class="score-preview"></div>
+    <div class="btn-row"><button class="btn btn-secondary" onclick="prevStep(3)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(3)">Continuar →</button></div>
+  </div>
+
+  <!-- SEC E -->
+  <div class="section-card" id="sec-4" style="display:none">
+    <div class="section-header"><div class="section-icon">⚠️</div><div>
+      <div class="section-title">Diagnóstico de Problemas</div>
+      <div class="section-desc">Identifique as principais limitações e falhas do sistema</div>
+    </div></div>
+    <div class="form-group"><label class="form-label">Principais Problemas</label><div class="checkbox-grid" id="e_problemas_grid"></div></div>
+    <div class="form-group"><label class="form-label">Situações concretas de falha</label><textarea class="form-textarea" id="e_situacoes" oninput="autoSave()" placeholder="Ex: Em Março 2024, o sistema ficou inactivo 5 dias…"></textarea></div>
+    <div class="form-group"><label class="form-label">Processos críticos NÃO suportados?</label>
+      <select class="form-select" id="e_gaps" onchange="autoSave()"><option value="">Seleccione…</option><option>Sim</option><option>Não</option><option>Parcialmente</option></select></div>
+    <div class="form-group"><label class="form-label">Descreva os processos não suportados</label><textarea class="form-textarea" id="e_gaps_desc" oninput="autoSave()" placeholder="Descreva os processos sem suporte informático…"></textarea></div>
+    <div class="btn-row"><button class="btn btn-secondary" onclick="prevStep(4)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(4)">Continuar →</button></div>
+  </div>
+
+  <!-- SEC F -->
+  <div class="section-card" id="sec-5" style="display:none">
+    <div class="section-header"><div class="section-icon">🖥️</div><div>
+      <div class="section-title">Infraestrutura Tecnológica</div>
+      <div class="section-desc">Condições técnicas de suporte ao sistema</div>
+    </div></div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Tipo de Infraestrutura</label>
+        <select class="form-select" id="f_infra" onchange="autoSave()"><option value="">Seleccione…</option><option>Servidor local (on-premise)</option><option>Nuvem pública (cloud)</option><option>Nuvem privada / institucional</option><option>Computador local (standalone)</option><option>Infraestrutura do fornecedor</option><option>Desconhecida</option></select></div>
+      <div class="form-group"><label class="form-label">Qualidade da Internet</label>
+        <select class="form-select" id="f_internet" onchange="autoSave()"><option value="">Seleccione…</option><option>Muito boa — estável e rápida</option><option>Boa — interrupções ocasionais</option><option>Razoável — interrupções frequentes</option><option>Fraca — ligação instável</option><option>Inexistente — sem internet</option></select></div>
+      <div class="form-group"><label class="form-label">Backups Regulares</label>
+        <select class="form-select" id="f_backup" onchange="autoSave()"><option value="">Seleccione…</option><option>Sim — automáticos</option><option>Sim — manuais</option><option>Ocasionalmente</option><option>Não</option><option>Desconhecido</option></select></div>
+      <div class="form-group"><label class="form-label">Armazenamento dos Dados</label>
+        <select class="form-select" id="f_storage" onchange="autoSave()"><option value="">Seleccione…</option><option>Localmente nesta unidade</option><option>Servidor central na sede</option><option>Ambos</option><option>Desconhecido</option></select></div>
+      <div class="form-group"><label class="form-label">Controlo de Acessos</label>
+        <select class="form-select" id="f_seguranca" onchange="autoSave()"><option value="">Seleccione…</option><option>Sim — com perfis de utilizador</option><option>Autenticação básica</option><option>Sem controlo de acessos</option><option>Desconhecido</option></select></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-secondary" onclick="prevStep(5)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(5)">Continuar →</button></div>
+  </div>
+
+  <!-- SEC G -->
+  <div class="section-card" id="sec-6" style="display:none">
+    <div class="section-header"><div class="section-icon">🚀</div><div>
+      <div class="section-title">Necessidades Futuras</div>
+      <div class="section-desc">Perspectiva sobre o desenvolvimento futuro do sistema</div>
+    </div></div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Decisão sobre o Sistema</label>
+        <select class="form-select" id="g_decisao" onchange="autoSave()"><option value="">Seleccione…</option><option>Manter sem alterações</option><option>Manter com melhorias pontuais</option><option>Melhorar significativamente</option><option>Substituir por novo sistema</option><option>Desactivar / eliminar</option></select></div>
+      <div class="form-group"><label class="form-label">Capacidade da Equipa</label>
+        <select class="form-select" id="g_capacidade" onchange="autoSave()"><option value="">Seleccione…</option><option>Totalmente preparada</option><option>Parcialmente — precisa formação pontual</option><option>Necessita formação aprofundada</option><option>Não está preparada</option></select></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Funcionalidades Necessárias</label><textarea class="form-textarea" id="g_funcionalidades" oninput="autoSave()" placeholder="Ex: Dashboard em tempo real, integração com telemedição…"></textarea></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Outros Sistemas Necessários</label><textarea class="form-textarea" id="g_outros_sistemas" oninput="autoSave()" placeholder="Ex: Gestão de ordens de trabalho, app móvel para leituras…"></textarea></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Observações Finais</label><textarea class="form-textarea" id="g_obs" oninput="autoSave()" placeholder="Qualquer informação adicional relevante…"></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prevStep(6)">← Anterior</button>
+      <button class="btn btn-teal" onclick="generateReport()">✨ Gerar Relatório IA</button>
+    </div>
+  </div>
+
+  <!-- SEC H REPORT -->
+  <div id="sec-7" style="display:none">
+    <div class="section-card" style="padding:1rem 1.5rem;margin-bottom:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="section-icon" style="width:36px;height:36px;font-size:16px">📋</div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:16px;color:var(--navy)">Relatório de Diagnóstico</div>
+            <div style="font-size:12px;color:var(--gray-400)">Gerado pela Inteligência Artificial</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="prevStep(7)" style="padding:8px 14px;font-size:13px">← Editar</button>
+      </div>
+    </div>
+
+    <!-- EXPORT BAR -->
+    <div class="export-bar">
+      <span class="export-bar-label">📤 Exportar Relatório:</span>
+      <div class="export-btns">
+        <button class="btn btn-outline" onclick="exportPDF()">🖨️ PDF</button>
+        <button class="btn btn-green" onclick="exportExcel()">📊 Excel</button>
+        <button class="btn btn-primary" onclick="exportWord()">📄 Word</button>
+        <button class="btn btn-amber" onclick="saveToConsolidation()">💾 Guardar na Consolidação</button>
+      </div>
+    </div>
+
+    <div class="report-wrap report-printable" id="reportWrap">
+      <div class="report-header">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+          <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 10px">
+            <svg width="28" height="28" viewBox="0 0 36 36" fill="none"><path d="M18 4C18 4 8 12 8 20a10 10 0 0020 0C28 12 18 4 18 4z" fill="#5DCAA5" opacity="0.9"/><path d="M18 10C18 10 12 15 12 20a6 6 0 0012 0C24 15 18 10 18 10z" fill="white" opacity="0.8"/></svg>
+          </div>
+          <div>
+            <div style="font-size:11px;opacity:0.5;text-transform:uppercase;letter-spacing:0.8px">AdeM, IP</div>
+            <div class="report-title">Diagnóstico Crítico — Acervo Informático</div>
+          </div>
+        </div>
+        <div id="report-meta" class="report-meta"></div>
+      </div>
+      <div class="report-body">
+        <div id="report-scores"></div>
+        <div id="report-ai-content"></div>
+      </div>
+    </div>
+  </div>
+</div><!-- end form view -->
+
+<!-- ══ CONSOLIDATION VIEW ══ -->
+<div class="view" id="view-consolidation">
+  <div class="consol-header">
+    <div>
+      <div class="consol-title">Painel de Consolidação</div>
+      <div style="font-size:13px;color:var(--gray-400);margin-top:4px">Agregação de todos os diagnósticos registados</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="exportConsolidationExcel()">📊 Exportar Excel</button>
+      <button class="btn btn-red btn-xs" style="padding:8px 14px;font-size:13px" onclick="clearAllSystems()">🗑 Limpar Tudo</button>
+    </div>
+  </div>
+  <div id="consolContent"></div>
+</div>
+
+</main>
+
+<script>
+// ════════ DATA ════════
+const PROVINCIAS = {
+  "Maputo Cidade":["KaMpfumo","Nlhamankulu","KaMaxaquene","KaHofa","KaMubukwana","KaMavota","KaTembe","KaNyaka"],
+  "Maputo Província":["Boane","Magude","Manhiça","Marracuene","Matola","Matutuíne","Moamba","Namaacha"],
+  "Gaza":["Bilene","Chibuto","Chicualacuala","Chigubo","Chókwè","Chongoene","Guijá","Limpopo","Mabalane","Mandlakaze","Massangena","Massingir","Xai-Xai"],
+  "Inhambane":["Funhalouro","Govuro","Homoíne","Inharrime","Inhassoro","Jangamo","Mabote","Massinga","Morrumbene","Panda","Vilankulo","Zavala","Maxixe (Cidade)","Inhambane (Cidade)"],
+  "Sofala":["Buzi","Caia","Chemba","Cheringoma","Chibabava","Dondo","Gorongosa","Machanga","Maringue","Marromeu","Muanza","Nhamatanda","Beira (Cidade)"],
+  "Manica":["Bárue","Gondola","Guro","Macate","Machaze","Manica","Mossurize","Sussundenga","Tambara","Vanduzi","Chimoio (Cidade)"],
+  "Tete":["Angónia","Cahora-Bassa","Changara","Chifunde","Chiuta","Dôa","Macanga","Marávia","Moatize","Mutarara","Nyanga","Tsangano","Zumbo","Tete (Cidade)"],
+  "Zambézia":["Alto Molócuè","Chinde","Gilé","Guruè","Ile","Inhassunge","Luabo","Lugela","Maganja da Costa","Milange","Mocuba","Mocubela","Molumbo","Mopeia","Morrumbala","Namarrói","Nicoadala","Pebane","Quelimane (Cidade)"],
+  "Nampula":["Angoche","Eráti","Ilha de Moçambique","Lalaua","Larde","Liúpo","Malema","Meconta","Mecubúri","Memba","Mogincual","Mogovolas","Moma","Monapo","Mossuril","Muecate","Murrupula","Nacala-a-Velha","Nacala Porto","Nacarôa","Rapale","Ribáuè","Nampula (Cidade)"],
+  "Cabo Delgado":["Ancuabe","Balama","Chiúre","Ibo","Macomia","Mecúfi","Meluco","Metuge","Mocímboa da Praia","Montepuez","Mueda","Muidumbe","Namuno","Nangade","Palma","Quissanga","Pemba (Cidade)"],
+  "Niassa":["Chimbonila","Cuamba","Lago","Majune","Mandimba","Marrupa","Maúa","Mavago","Mecanhelas","Mecula","Metarica","Muembe","N'gauma","Ngózi","Sanga","Lichinga (Cidade)"]
+};
+
+const DIMENSIONS = [
+  {id:'score_cobertura',    label:'Cobertura funcional',           hint:'O sistema cobre adequadamente os processos que deveria suportar?'},
+  {id:'score_qualidade',    label:'Qualidade dos dados',            hint:'Os dados são completos, actualizados e de confiança?'},
+  {id:'score_usabilidade',  label:'Facilidade de utilização',      hint:'O sistema é fácil de aprender e operar?'},
+  {id:'score_estabilidade', label:'Estabilidade / disponibilidade',hint:'O sistema está disponível quando necessário?'},
+  {id:'score_integracao',   label:'Integração com sistemas',       hint:'Qual o nível de ligação efectiva com outros sistemas?'},
+  {id:'score_escalabilidade',label:'Escalabilidade',               hint:'O sistema suportará o crescimento da AdeM, IP?'},
+  {id:'score_suporte',      label:'Suporte técnico',               hint:'Existe suporte adequado para resolver problemas?'},
+  {id:'score_alinhamento',  label:'Alinhamento institucional',     hint:'O sistema responde às necessidades do novo modelo da AdeM, IP?'},
+];
+const PROBLEMS=['Falhas e instabilidade frequentes','Interface desactualizada / difícil de usar','Dados incompletos ou desactualizados','Falta de funcionalidades necessárias','Sem integração com outros sistemas','Dificuldade de gerar relatórios','Dependência de um único técnico','Falta de suporte do fornecedor','Custos elevados de manutenção','Sem backups adequados','Problemas de segurança','Sistema obsoleto / sem actualizações'];
+
+// Populate provinces
+const provSel=document.getElementById('a_provincia');
+Object.keys(PROVINCIAS).forEach(p=>{const o=document.createElement('option');o.value=o.textContent=p;provSel.appendChild(o);});
+
+function updateDistritos(){
+  const prov=document.getElementById('a_provincia').value;
+  const distSel=document.getElementById('a_distrito');
+  distSel.innerHTML='<option value="">Seleccione…</option>';
+  if(prov&&PROVINCIAS[prov])PROVINCIAS[prov].forEach(d=>{const o=document.createElement('option');o.value=o.textContent=d;distSel.appendChild(o);});
+}
+
+// Build stars
+const starsContainer=document.getElementById('stars-container');
+DIMENSIONS.forEach(dim=>{
+  const div=document.createElement('div');div.className='star-group';
+  div.innerHTML=`<div class="star-label-row"><label class="star-label">${dim.label}</label><span class="star-value" id="val_${dim.id}">—</span></div>
+  <div class="form-hint">${dim.hint}</div>
+  <div class="stars" id="stars_${dim.id}">${[5,4,3,2,1].map(v=>`<input type="radio" name="${dim.id}" id="${dim.id}_${v}" value="${v}" onchange="updateScores();autoSave()"><label for="${dim.id}_${v}" title="${v}">★</label>`).join('')}</div>
+  <div class="star-scale"><span>1 — Muito Baixo</span><span>5 — Muito Alto</span></div>`;
+  starsContainer.appendChild(div);
+});
+
+// Build problems
+const probGrid=document.getElementById('e_problemas_grid');
+PROBLEMS.forEach(p=>{
+  const label=document.createElement('label');label.className='checkbox-item';
+  label.innerHTML=`<input type="checkbox" value="${p}" onchange="this.parentElement.classList.toggle('checked',this.checked);autoSave()"> ${p}`;
+  probGrid.appendChild(label);
+});
+
+document.getElementById('a_data').valueAsDate=new Date();
+
+// ════════ SCORES ════════
+function getScores(){const s={};DIMENSIONS.forEach(d=>{const c=document.querySelector(`input[name="${d.id}"]:checked`);s[d.id]=c?parseInt(c.value):0;});return s;}
+function getAvgScore(){const s=getScores();const v=Object.values(s).filter(x=>x>0);return v.length?(v.reduce((a,b)=>a+b,0)/v.length):0;}
+function matLabel(avg){if(avg>=4.5)return{text:'Excelente',cls:'high'};if(avg>=3.5)return{text:'Bom',cls:'high'};if(avg>=2.5)return{text:'Médio',cls:'mid'};if(avg>=1.5)return{text:'Baixo',cls:'low'};return{text:'Crítico',cls:'low'};}
+
+function updateScores(){
+  const scores=getScores();
+  DIMENSIONS.forEach(dim=>{
+    const v=scores[dim.id],el=document.getElementById(`val_${dim.id}`);
+    el.textContent=v||'—';
+    el.style.color=v>=4?'var(--green)':v>=3?'var(--amber)':v?'var(--red)':'var(--gray-400)';
+  });
+  const avg=getAvgScore();
+  if(avg>0){
+    const p=document.getElementById('score-preview');p.style.display='flex';
+    const ml=matLabel(avg);
+    p.innerHTML=`<div class="score-circle"><span class="score-num">${avg.toFixed(1)}</span><span class="score-max">/5</span><span style="font-size:10px;opacity:0.8">${ml.text}</span></div>
+    <div class="score-bars">${DIMENSIONS.map(dim=>`<div class="score-bar-row"><span class="score-bar-name">${dim.label.substring(0,20)}</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${scores[dim.id]*20}%"></div></div><span class="score-bar-val">${scores[dim.id]||'—'}</span></div>`).join('')}</div>`;
+  }
+}
+
+// ════════ NAVIGATION ════════
+let currentStep=0;
+function goTo(step){
+  document.getElementById(`sec-${currentStep}`).style.display='none';
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  document.getElementById(`step-${currentStep}`).classList.add('done');
+  currentStep=step;
+  const el=document.getElementById(`sec-${step}`);
+  el.style.display='block';
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById(`step-${step}`).classList.add('active');
+  document.getElementById(`step-${step}`).classList.remove('done');
+  const pct=((step+1)/8*100).toFixed(0);
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=`Passo ${step+1} de 8`;
+}
+function nextStep(from){goTo(from+1);}
+function prevStep(from){goTo(from-1);}
+
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  if(v==='consolidation')renderConsolidation();
+}
+
+// ════════ COLLECT DATA ════════
+function collectData(){
+  const scores=getScores(),avg=getAvgScore();
+  const problems=[...document.querySelectorAll('#e_problemas_grid input:checked')].map(i=>i.value);
+  return {
+    id:Date.now(),
+    savedAt:new Date().toISOString(),
+    unidade:document.getElementById('a_unidade').value,
+    tipo:document.getElementById('a_tipo').value,
+    provincia:document.getElementById('a_provincia').value,
+    distrito:document.getElementById('a_distrito').value,
+    respondente:document.getElementById('a_nome').value,
+    cargo:document.getElementById('a_cargo').value,
+    contacto:document.getElementById('a_contacto').value,
+    data:document.getElementById('a_data').value,
+    sistema:document.getElementById('b_nome').value,
+    versao:document.getElementById('b_versao').value,
+    dominio:document.getElementById('b_dominio').value,
+    origem:document.getElementById('b_origem').value,
+    fornecedor:document.getElementById('b_fornecedor').value,
+    ano:document.getElementById('b_ano').value,
+    licenca:document.getElementById('b_licenca').value,
+    estado:document.getElementById('b_estado').value,
+    cobertura:document.getElementById('c_cobertura').value,
+    frequencia:document.getElementById('c_frequencia').value,
+    utl_local:document.getElementById('c_utl_local').value,
+    utl_total:document.getElementById('c_utl_total').value,
+    processos:document.getElementById('c_processos').value,
+    integracao:document.getElementById('c_integracao').value,
+    integ_sistemas:document.getElementById('c_integ_sistemas').value,
+    scores,avg,
+    problems,
+    situacoes:document.getElementById('e_situacoes').value,
+    gaps:document.getElementById('e_gaps').value,
+    gaps_desc:document.getElementById('e_gaps_desc').value,
+    infra:document.getElementById('f_infra').value,
+    internet:document.getElementById('f_internet').value,
+    backup:document.getElementById('f_backup').value,
+    storage:document.getElementById('f_storage').value,
+    seguranca:document.getElementById('f_seguranca').value,
+    decisao:document.getElementById('g_decisao').value,
+    capacidade:document.getElementById('g_capacidade').value,
+    funcionalidades:document.getElementById('g_funcionalidades').value,
+    outros_sistemas:document.getElementById('g_outros_sistemas').value,
+    obs:document.getElementById('g_obs').value,
+    aiReport:''
+  };
+}
+
+function loadData(d){
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
+  set('a_unidade',d.unidade);set('a_tipo',d.tipo);
+  set('a_provincia',d.provincia);updateDistritos();set('a_distrito',d.distrito);
+  set('a_nome',d.respondente);set('a_cargo',d.cargo);set('a_contacto',d.contacto);set('a_data',d.data);
+  set('b_nome',d.sistema);set('b_versao',d.versao);set('b_dominio',d.dominio);set('b_origem',d.origem);
+  set('b_fornecedor',d.fornecedor);set('b_ano',d.ano);set('b_licenca',d.licenca);set('b_estado',d.estado);
+  set('c_cobertura',d.cobertura);set('c_frequencia',d.frequencia);set('c_utl_local',d.utl_local);
+  set('c_utl_total',d.utl_total);set('c_processos',d.processos);set('c_integracao',d.integracao);set('c_integ_sistemas',d.integ_sistemas);
+  if(d.scores)DIMENSIONS.forEach(dim=>{const v=d.scores[dim.id];if(v){const r=document.getElementById(`${dim.id}_${v}`);if(r)r.checked=true;}});
+  updateScores();
+  if(d.problems)document.querySelectorAll('#e_problemas_grid input').forEach(cb=>{if(d.problems.includes(cb.value)){cb.checked=true;cb.parentElement.classList.add('checked');}});
+  set('e_situacoes',d.situacoes);set('e_gaps',d.gaps);set('e_gaps_desc',d.gaps_desc);
+  set('f_infra',d.infra);set('f_internet',d.internet);set('f_backup',d.backup);set('f_storage',d.storage);set('f_seguranca',d.seguranca);
+  set('g_decisao',d.decisao);set('g_capacidade',d.capacidade);set('g_funcionalidades',d.funcionalidades);set('g_outros_sistemas',d.outros_sistemas);set('g_obs',d.obs);
+}
+
+// ════════ SAVE / RESUME ════════
+let saveTimer=null;
+function autoSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    const d=collectData();
+    if(d.unidade||d.sistema){
+      localStorage.setItem('adem_draft',JSON.stringify(d));
+    }
+  },800);
+}
+
+function checkSavedDraft(){
+  const raw=localStorage.getItem('adem_draft');
+  if(!raw)return;
+  try{
+    const d=JSON.parse(raw);
+    if(d.unidade||d.sistema){
+      document.getElementById('resumeInfo').textContent=`${d.sistema||'Sistema s/nome'} — ${d.unidade||'Unidade s/nome'}`;
+      document.getElementById('resumeBanner').style.display='flex';
+    }
+  }catch(e){}
+}
+
+function resumeSaved(){
+  const raw=localStorage.getItem('adem_draft');
+  if(!raw)return;
+  loadData(JSON.parse(raw));
+  document.getElementById('resumeBanner').style.display='none';
+}
+
+function discardSaved(){
+  localStorage.removeItem('adem_draft');
+  document.getElementById('resumeBanner').style.display='none';
+}
+
+// ════════ AI REPORT ════════
+async function generateReport(){
+  const d=collectData();
+  goTo(7);
+  document.getElementById('report-meta').innerHTML=`
+    <span>📍 ${d.unidade||'—'} — ${d.provincia||''} / ${d.distrito||''}</span>
+    <span>💻 ${d.sistema||'—'} (${d.dominio||'—'})</span>
+    <span>👤 ${d.respondente||'—'} · ${d.cargo||''}</span>
+    <span>📅 ${d.data||new Date().toLocaleDateString('pt')}</span>`;
+  const mat=matLabel(d.avg);
+  document.getElementById('report-scores').innerHTML=`
+    <div class="report-score-band">
+      <span class="score-badge ${mat.cls}">★ Score Médio: ${d.avg.toFixed(2)}/5 — ${mat.text}</span>
+      <span class="score-badge ${d.scores.score_cobertura>=3?'high':'low'}">Cobertura: ${d.scores.score_cobertura}/5</span>
+      <span class="score-badge ${d.scores.score_integracao>=3?'high':'low'}">Integração: ${d.scores.score_integracao}/5</span>
+      <span class="score-badge ${d.scores.score_escalabilidade>=3?'high':'low'}">Escalabilidade: ${d.scores.score_escalabilidade}/5</span>
+    </div>`;
+  document.getElementById('report-ai-content').innerHTML=`<div class="loading-pulse"><div class="pulse-dots"><div class="pulse-dot"></div><div class="pulse-dot"></div><div class="pulse-dot"></div></div>A analisar os dados e gerar o relatório executivo…</div>`;
+
+  const scoreLines=DIMENSIONS.map(dim=>`  - ${dim.label}: ${d.scores[dim.id]}/5`).join('\n');
+  const prompt=`Você é consultor sénior em transformação digital de utilities de água em Moçambique. Analise os dados do diagnóstico abaixo e produza um relatório executivo em português para o Conselho de Administração da AdeM, IP.
+
+DADOS:
+Unidade: ${d.unidade} (${d.tipo}) — ${d.provincia}, ${d.distrito}
+Sistema: ${d.sistema} | Domínio: ${d.dominio} | Origem: ${d.origem} | Estado: ${d.estado}
+Fornecedor: ${d.fornecedor||'N/A'} | Ano: ${d.ano||'N/A'} | Cobertura: ${d.cobertura}
+Integração: ${d.integracao}${d.integ_sistemas?' ('+d.integ_sistemas+')':''}
+Processos: ${d.processos}
+Scores (1-5): ${scoreLines}
+SCORE MÉDIO: ${d.avg.toFixed(2)}/5
+Infraestrutura: ${d.infra} | Internet: ${d.internet} | Backup: ${d.backup}
+Problemas: ${d.problems.join(', ')||'Nenhum'}
+Situações falha: ${d.situacoes||'N/A'}
+Gaps: ${d.gaps} — ${d.gaps_desc||'N/A'}
+Decisão proposta: ${d.decisao} | Capacidade equipa: ${d.capacidade}
+Necessidades futuras: ${d.funcionalidades||'N/A'}
+
+Produza o relatório com estas secções em Markdown (## para títulos, **negrito**, listas com -):
+## 1. Sumário Executivo
+## 2. Análise das Dimensões de Maturidade
+## 3. Principais Riscos e Constrangimentos
+## 4. Lacunas Estratégicas
+## 5. Recomendações Prioritárias (com horizonte temporal)
+## 6. Decisão Recomendada
+
+Use linguagem executiva, directa e orientada à acção.`;
+
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||"Não foi possível gerar o relatório.";
+    document.getElementById('report-ai-content').innerHTML=`<div class="ai-text">${renderMD(text)}</div>`;
+    // store report text on current data
+    window._lastReportText=text;
+    window._lastReportData=d;
+  }catch(e){
+    document.getElementById('report-ai-content').innerHTML=`<div style="padding:1rem;background:var(--amber-light);border-radius:8px;color:#92400E;font-size:13px">⚠️ Não foi possível conectar à API de IA. Score registado: ${d.avg.toFixed(2)}/5</div>`;
+  }
+}
+
+function renderMD(text){
+  return text.replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>(\n)?)+/g,m=>`<ul>${m}</ul>`);
+}
+
+// ════════ EXPORT FUNCTIONS ════════
+function exportPDF(){
+  window.print();
+}
+
+function exportWord(){
+  const reportHTML=document.getElementById('reportWrap').innerHTML;
+  const wordContent=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>Diagnóstico AdeM IP</title>
+<style>
+body{font-family:Arial,sans-serif;font-size:11pt;color:#1A202C;}
+h1,h2{color:#1B3A6B;font-family:Georgia,serif;}
+h2{font-size:13pt;border-bottom:1px solid #D8DEE9;padding-bottom:4pt;margin-top:16pt;}
+h3{font-size:11pt;color:#007B8A;text-transform:uppercase;letter-spacing:0.5pt;}
+ul{margin:6pt 0;padding-left:18pt;}
+li{margin-bottom:3pt;}
+strong{color:#1B3A6B;}
+.report-header{background:#1B3A6B;color:white;padding:16pt;margin-bottom:12pt;}
+.report-header *{color:white;}
+</style></head><body>${reportHTML}</body></html>`;
+  const blob=new Blob([wordContent],{type:'application/msword'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`diagnostico_${(window._lastReportData?.sistema||'sistema').replace(/\s+/g,'_')}.doc`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+function exportExcel(){
+  const d=window._lastReportData||collectData();
+  const wb=XLSX.utils.book_new();
+
+  // Sheet 1: Summary
+  const summary=[
+    ['DIAGNÓSTICO CRÍTICO — ADeM, IP','','',''],
+    [''],
+    ['IDENTIFICAÇÃO','','',''],
+    ['Unidade Orgânica',d.unidade,'Tipo',d.tipo],
+    ['Província',d.provincia,'Distrito',d.distrito],
+    ['Respondente',d.respondente,'Cargo',d.cargo],
+    ['Data',d.data,'',''],
+    [''],
+    ['SISTEMA','','',''],
+    ['Nome do Sistema',d.sistema,'Domínio',d.dominio],
+    ['Origem',d.origem,'Estado',d.estado],
+    ['Fornecedor',d.fornecedor,'Ano',d.ano],
+    [''],
+    ['SCORES DE MATURIDADE','Valor','',''],
+    ...DIMENSIONS.map(dim=>[dim.label,d.scores[dim.id]||0,'','']),
+    ['SCORE MÉDIO',d.avg.toFixed(2),'',''],
+    [''],
+    ['INFRAESTRUTURA','','',''],
+    ['Tipo de Infraestrutura',d.infra,'Internet',d.internet],
+    ['Backup',d.backup,'Segurança',d.seguranca],
+    [''],
+    ['PROBLEMAS IDENTIFICADOS',d.problems.join('; '),'',''],
+    ['DECISÃO PROPOSTA',d.decisao,'',''],
+    ['CAPACIDADE EQUIPA',d.capacidade,'',''],
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(summary);
+  ws1['!cols']=[{wch:30},{wch:30},{wch:20},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Diagnóstico');
+
+  // Sheet 2: Scores detail
+  const scoresData=[
+    ['Dimensão','Score (1-5)','Classificação'],
+    ...DIMENSIONS.map(dim=>{
+      const v=d.scores[dim.id]||0;
+      return[dim.label,v,v>=4?'Bom/Excelente':v>=3?'Médio':v>=2?'Baixo':'Crítico'];
+    }),
+    ['','',''],
+    ['SCORE MÉDIO',d.avg.toFixed(2),matLabel(d.avg).text],
+  ];
+  const ws2=XLSX.utils.aoa_to_sheet(scoresData);
+  ws2['!cols']=[{wch:30},{wch:15},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Scores de Maturidade');
+
+  // Sheet 3: AI Report
+  if(window._lastReportText){
+    const reportLines=window._lastReportText.split('\n').map(l=>[l]);
+    const ws3=XLSX.utils.aoa_to_sheet([['RELATÓRIO DE DIAGNÓSTICO — IA'],[''],[''],[''],...reportLines]);
+    ws3['!cols']=[{wch:100}];
+    XLSX.utils.book_append_sheet(wb,ws3,'Relatório IA');
+  }
+
+  XLSX.writeFile(wb,`diagnostico_${(d.sistema||'sistema').replace(/\s+/g,'_')}.xlsx`);
+}
+
+// ════════ SAVE TO CONSOLIDATION ════════
+function saveToConsolidation(){
+  const d=window._lastReportData||collectData();
+  d.aiReport=window._lastReportText||'';
+  d.id=Date.now();
+  d.savedAt=new Date().toISOString();
+  const systems=getSystems();
+  systems.push(d);
+  localStorage.setItem('adem_systems',JSON.stringify(systems));
+  localStorage.removeItem('adem_draft');
+  alert(`✅ Diagnóstico de "${d.sistema||'Sistema'}" guardado na consolidação!`);
+  document.getElementById('consolTab').textContent='📊 Consolidação ('+systems.length+')';
+}
+
+function getSystems(){
+  try{return JSON.parse(localStorage.getItem('adem_systems'))||[];}catch(e){return[];}
+}
+
+function deleteSystem(id){
+  if(!confirm('Eliminar este diagnóstico?'))return;
+  const systems=getSystems().filter(s=>s.id!==id);
+  localStorage.setItem('adem_systems',JSON.stringify(systems));
+  renderConsolidation();
+}
+
+function clearAllSystems(){
+  if(!confirm('Eliminar TODOS os diagnósticos guardados?'))return;
+  localStorage.removeItem('adem_systems');
+  renderConsolidation();
+}
+
+// ════════ CONSOLIDATION VIEW ════════
+let radarChart=null;
+function renderConsolidation(){
+  const systems=getSystems();
+  const el=document.getElementById('consolContent');
+  const tab=document.getElementById('consolTab');
+  tab.textContent=`📊 Consolidação${systems.length?` (${systems.length})`:''}`;
+
+  if(!systems.length){
+    el.innerHTML=`<div class="consol-empty"><div class="consol-empty-icon">📋</div><p>Nenhum diagnóstico guardado ainda.</p><p style="font-size:13px;margin-top:8px">Preencha o formulário e clique <strong>"Guardar na Consolidação"</strong> para ver os resultados aqui.</p></div>`;
+    return;
+  }
+
+  // Summary stats
+  const avgAll=(systems.reduce((s,x)=>s+x.avg,0)/systems.length).toFixed(2);
+  const best=systems.reduce((a,b)=>a.avg>b.avg?a:b);
+  const worst=systems.reduce((a,b)=>a.avg<b.avg?a:b);
+
+  let html=`
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div class="section-card" style="padding:1.25rem;text-align:center">
+      <div style="font-size:32px;font-family:var(--font-display);color:var(--navy)">${systems.length}</div>
+      <div style="font-size:12px;color:var(--gray-400)">Sistemas Diagnosticados</div>
+    </div>
+    <div class="section-card" style="padding:1.25rem;text-align:center">
+      <div style="font-size:32px;font-family:var(--font-display);color:${parseFloat(avgAll)>=3.5?'var(--green)':parseFloat(avgAll)>=2.5?'var(--amber)':'var(--red)'}">${avgAll}</div>
+      <div style="font-size:12px;color:var(--gray-400)">Score Médio Global</div>
+    </div>
+    <div class="section-card" style="padding:1.25rem;text-align:center">
+      <div style="font-size:14px;font-weight:600;color:var(--green)">${best.sistema||'—'}</div>
+      <div style="font-size:11px;color:var(--gray-400)">Score mais alto (${best.avg.toFixed(1)})</div>
+    </div>
+    <div class="section-card" style="padding:1.25rem;text-align:center">
+      <div style="font-size:14px;font-weight:600;color:var(--red)">${worst.sistema||'—'}</div>
+      <div style="font-size:11px;color:var(--gray-400)">Score mais baixo (${worst.avg.toFixed(1)})</div>
+    </div>
+  </div>`;
+
+  // Radar chart
+  html+=`<div class="chart-wrap"><div class="chart-title">Comparação de Maturidade por Sistema</div><canvas id="radarCanvas" height="320"></canvas></div>`;
+
+  // Summary table
+  html+=`<div class="section-card"><div style="font-family:var(--font-display);font-size:18px;color:var(--navy);margin-bottom:1rem">Tabela de Sistemas</div>
+  <div style="overflow-x:auto"><table class="summary-table">
+    <thead><tr>
+      <th>Sistema</th><th>Unidade</th><th>Província</th><th>Domínio</th><th>Estado</th>
+      ${DIMENSIONS.map(d=>`<th title="${d.label}">${d.label.substring(0,6)}…</th>`).join('')}
+      <th>Score</th><th>Classificação</th><th></th>
+    </tr></thead>
+    <tbody>
+    ${systems.map(s=>{
+      const mat=matLabel(s.avg);
+      return `<tr>
+        <td><strong>${s.sistema||'—'}</strong></td>
+        <td>${s.unidade||'—'}</td><td>${s.provincia||'—'}</td>
+        <td>${(s.dominio||'').substring(0,20)}</td>
+        <td>${s.estado||'—'}</td>
+        ${DIMENSIONS.map(d=>{const v=s.scores?s.scores[d.id]:0;return`<td style="text-align:center;color:${v>=4?'var(--green)':v>=3?'var(--amber)':'var(--red)'};font-weight:600">${v||'—'}</td>`;}).join('')}
+        <td style="text-align:center;font-weight:700;color:${parseFloat(s.avg)>=3.5?'var(--green)':parseFloat(s.avg)>=2.5?'var(--amber)':'var(--red)'}">${s.avg.toFixed(2)}</td>
+        <td><span class="badge-small score-badge ${mat.cls}">${mat.text}</span></td>
+        <td><button class="btn-xs btn-red" style="background:var(--red-light);color:var(--red)" onclick="deleteSystem(${s.id})">✕</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div></div>`;
+
+  // Systems cards
+  html+=`<div style="font-family:var(--font-display);font-size:20px;color:var(--navy);margin:1.5rem 0 1rem">Diagnósticos Individuais</div>
+  <div class="systems-grid">
+  ${systems.map(s=>{
+    const mat=matLabel(s.avg);
+    return `<div class="system-card">
+      <div class="sys-card-header">
+        <div><div class="sys-card-title">${s.sistema||'Sistema s/nome'}</div><div class="sys-card-sub">${s.unidade||'—'} · ${s.provincia||''}</div></div>
+        <span class="sys-score-pill score-badge ${mat.cls}">${s.avg.toFixed(1)}</span>
+      </div>
+      <div class="mini-bars">
+        ${DIMENSIONS.slice(0,4).map(d=>`<div class="mini-bar-row"><span class="mini-bar-name">${d.label.substring(0,14)}</span><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${(s.scores?s.scores[d.id]:0)*20}%;background:${(s.scores?s.scores[d.id]:0)>=3?'var(--teal)':'var(--red)'}"></div></div></div>`).join('')}
+      </div>
+      <div class="sys-card-date">📅 ${new Date(s.savedAt||s.id).toLocaleDateString('pt')} · ${s.dominio||'—'}</div>
+      <div class="sys-card-actions">
+        <button class="btn-xs" style="background:var(--teal-light);color:var(--teal)" onclick="reloadSystem(${s.id})">↩ Editar</button>
+        <button class="btn-xs" style="background:var(--red-light);color:var(--red)" onclick="deleteSystem(${s.id})">✕ Eliminar</button>
+      </div>
+    </div>`;
+  }).join('')}
+  </div>`;
+
+  el.innerHTML=html;
+
+  // Render radar chart
+  setTimeout(()=>{
+    const canvas=document.getElementById('radarCanvas');
+    if(!canvas)return;
+    if(radarChart)radarChart.destroy();
+    const colors=['rgba(0,123,138,0.6)','rgba(27,58,107,0.6)','rgba(232,160,32,0.6)','rgba(29,158,117,0.6)','rgba(192,57,43,0.6)'];
+    radarChart=new Chart(canvas,{
+      type:'radar',
+      data:{
+        labels:DIMENSIONS.map(d=>d.label.replace(/ \/ /g,'/').substring(0,16)),
+        datasets:systems.map((s,i)=>({
+          label:s.sistema||`Sistema ${i+1}`,
+          data:DIMENSIONS.map(d=>s.scores?s.scores[d.id]||0:0),
+          backgroundColor:colors[i%colors.length].replace('0.6','0.1'),
+          borderColor:colors[i%colors.length],
+          borderWidth:2,pointRadius:4,pointBackgroundColor:colors[i%colors.length]
+        }))
+      },
+      options:{responsive:true,scales:{r:{min:0,max:5,ticks:{stepSize:1,font:{size:10}},pointLabels:{font:{size:11}}}},plugins:{legend:{position:'bottom',labels:{font:{size:12}}}}}
+    });
+  },100);
+}
+
+function reloadSystem(id){
+  const s=getSystems().find(x=>x.id===id);
+  if(!s)return;
+  loadData(s);
+  switchView('form');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>{t.classList.toggle('active',i===0);});
+  goTo(0);
+}
+
+function exportConsolidationExcel(){
+  const systems=getSystems();
+  if(!systems.length){alert('Nenhum sistema para exportar.');return;}
+  const wb=XLSX.utils.book_new();
+  const headers=['Sistema','Unidade','Tipo','Província','Distrito','Domínio','Estado','Ano',...DIMENSIONS.map(d=>d.label),'Score Médio','Classificação','Problemas','Decisão','Data'];
+  const rows=systems.map(s=>[
+    s.sistema,s.unidade,s.tipo,s.provincia,s.distrito,s.dominio,s.estado,s.ano,
+    ...DIMENSIONS.map(d=>s.scores?s.scores[d.id]||0:0),
+    parseFloat(s.avg).toFixed(2),matLabel(s.avg).text,
+    (s.problems||[]).join('; '),s.decisao,
+    new Date(s.savedAt||s.id).toLocaleDateString('pt')
+  ]);
+  const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols']=[{wch:20},{wch:25},{wch:15},{wch:15},{wch:18},{wch:20},{wch:20},{wch:8},...DIMENSIONS.map(()=>({wch:12})),{wch:10},{wch:15},{wch:40},{wch:25},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws,'Consolidação');
+  XLSX.writeFile(wb,'consolidacao_diagnostico_adem.xlsx');
+}
+
+// ════════ INIT ════════
+checkSavedDraft();
+</script>
+</body>
+</html>
